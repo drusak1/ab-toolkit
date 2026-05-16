@@ -141,7 +141,7 @@ export default function ResultsPage() {
                 <tr><td className="muted">Primary metric ID</td><td>#{run.experiment.primary_metric_id}</td></tr>
                 <tr><td className="muted">Secondary metrics</td><td>{run.experiment.secondary_metric_ids.length ? run.experiment.secondary_metric_ids.map((id) => `#${id}`).join(", ") : "—"}</td></tr>
                 <tr><td className="muted">Период</td><td>{run.experiment.start_date.slice(0,10)} → {run.experiment.end_date.slice(0,10)}</td></tr>
-                <tr><td className="muted">Stat. test</td><td>{run.experiment.stat_test}{run.experiment.cuped ? " + CUPED" : ""}</td></tr>
+                <tr><td className="muted">Stat. test</td><td>{run.experiment.stat_test}{run.experiment.cuped ? " + CUPED" : ""}{run.experiment.stratification ? ` + stratified (${run.experiment.strat_column})` : ""}</td></tr>
                 <tr><td className="muted">α / β</td><td>{run.experiment.alpha} / {run.experiment.beta}</td></tr>
                 <tr><td className="muted">Buckets</td><td>{run.experiment.n_buckets}</td></tr>
                 <tr><td className="muted">Соль</td><td><code>{run.experiment.salt}</code></td></tr>

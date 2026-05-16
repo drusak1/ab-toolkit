@@ -92,6 +92,25 @@ class DuckEngine:
         )
         return self.conn.execute(sql).df()
 
+    def user_dimension(
+        self, dataset_id: int, user_col: str, dim_col: str,
+        date_col: str | None = None, start: datetime | None = None, end: datetime | None = None,
+    ) -> pd.DataFrame:
+        """Per-user stratum value (mode of dim_col in window). Returns df[user_id, stratum]."""
+        view = self.view_for(dataset_id)
+        where = []
+        if date_col and start is not None:
+            where.append(f"{_q(date_col)} >= TIMESTAMP '{start.isoformat(sep=' ')}'")
+        if date_col and end is not None:
+            where.append(f"{_q(date_col)} < TIMESTAMP '{end.isoformat(sep=' ')}'")
+        where_sql = "WHERE " + " AND ".join(where) if where else ""
+        # mode() picks the most frequent dim value per user
+        sql = (
+            f"SELECT {_q(user_col)} AS user_id, mode({_q(dim_col)}) AS stratum "
+            f"FROM {view} {where_sql} GROUP BY {_q(user_col)}"
+        )
+        return self.conn.execute(sql).df()
+
     def raw_metric(self, sql: str, start: datetime | None, end: datetime | None) -> pd.DataFrame:
         """Run user-provided SQL with {start}/{end} placeholders. Must return columns user_id, value."""
         s = start.isoformat(sep=" ") if start else ""

@@ -64,6 +64,7 @@ export type Experiment = {
   beta: number;
   mde_pct: number;
   stratification: boolean;
+  strat_column: string | null;
   cuped: boolean;
   n_buckets: number;
   stat_test: string;

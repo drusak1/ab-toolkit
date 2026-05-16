@@ -52,7 +52,7 @@ from ab_calc.metrics import evaluate
 from ab_calc.multitest import benjamini_hochberg, bonferroni, holm
 from ab_calc.sources import detect_schema, get_engine
 from ab_calc.stats import bootstrap_diff_test, mann_whitney, posterior_diff, srm_check, ttest, welch_ttest
-from ab_calc.variance_reduction import cuped_test
+from ab_calc.variance_reduction import cuped_test, stratified_test
 
 
 @asynccontextmanager
@@ -332,7 +332,7 @@ def _hist(values: np.ndarray, n_bins: int = 50) -> HistogramData:
     return HistogramData(bins=edges.tolist(), counts=counts.tolist())
 
 
-def _run_one_metric(metric, ds, exp, ab: np.ndarray, user_ids):
+def _run_one_metric(metric, ds, exp, ab: np.ndarray, user_ids, strata: np.ndarray | None = None):
     df = evaluate(metric, ds, exp.start_date, exp.end_date)
     if df.empty:
         return None
@@ -342,7 +342,9 @@ def _run_one_metric(metric, ds, exp, ab: np.ndarray, user_ids):
     if len(a) < 2 or len(b) < 2:
         return None
 
-    if exp.cuped:
+    if exp.stratification and strata is not None:
+        res = stratified_test(a, b, strata[ab == 0], strata[ab == 1], alpha=exp.alpha)
+    elif exp.cuped:
         period_len = exp.end_date - exp.start_date
         pre_df = evaluate(metric, ds, exp.start_date - period_len, exp.start_date)
         pre_map = dict(zip(pre_df["user_id"].astype(str), pre_df["value"]))
@@ -409,6 +411,15 @@ def api_exp_run(exp_id: int):
     buckets = assign_groups(user_ids, exp.salt, exp.n_buckets)
     ab = buckets_to_ab(buckets)
 
+    # Per-user strata (post-stratification variance reduction)
+    strata = None
+    if exp.stratification and exp.strat_column:
+        dim_df = get_engine().user_dimension(
+            ds.id, ds.user_col, exp.strat_column, ds.date_col, exp.start_date, exp.end_date
+        )
+        strat_map = dict(zip(dim_df["user_id"].astype(str), dim_df["stratum"].astype(str)))
+        strata = np.array([strat_map.get(u, "_na") for u in user_ids])
+
     rows = []
     hist_a = hist_b = None
     metric_ids = [exp.primary_metric_id] + list(exp.secondary_metric_ids)
@@ -416,7 +427,7 @@ def api_exp_run(exp_id: int):
         m = reg.get_metric(mid)
         if not m:
             continue
-        out = _run_one_metric(m, ds, exp, ab, user_ids)
+        out = _run_one_metric(m, ds, exp, ab, user_ids, strata)
         if out is None:
             continue
         row, a, b = out

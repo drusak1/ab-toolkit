@@ -68,6 +68,7 @@ class ExperimentBase(SQLModel):
     beta: float = 0.1
     mde_pct: float = 1.0
     stratification: bool = False
+    strat_column: Optional[str] = None
     cuped: bool = False
     n_buckets: int = 10
     stat_test: str = "ttest"

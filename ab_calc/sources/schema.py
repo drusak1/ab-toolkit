@@ -51,10 +51,12 @@ def detect_schema(path: Path | str, n_rows: int = 1000) -> SchemaSuggestion:
     for c in cols:
         if c == user_col or c == date_col:
             continue
-        if df[c].dtype.kind in ("i", "f"):
+        if pd.api.types.is_numeric_dtype(df[c]):
             value_cols.append(c)
-        elif df[c].dtype == "object" or df[c].dtype.name == "category":
-            if df[c].nunique() <= 20:
-                dim_cols.append(c)
+        elif pd.api.types.is_datetime64_any_dtype(df[c]):
+            continue
+        elif df[c].nunique() <= 20:
+            # low-cardinality string / category → potential stratum
+            dim_cols.append(c)
 
     return SchemaSuggestion(user_col, date_col, value_cols, dim_cols, cols, dtypes)

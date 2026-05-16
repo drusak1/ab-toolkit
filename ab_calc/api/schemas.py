@@ -106,6 +106,7 @@ class ExperimentPayload(BaseModel):
     beta: float = 0.1
     mde_pct: float = 1.0
     stratification: bool = False
+    strat_column: str | None = None
     cuped: bool = False
     n_buckets: int = 10
     stat_test: Literal["ttest", "welch", "mann_whitney", "bootstrap"] = "ttest"
@@ -123,6 +124,7 @@ class ExperimentOut(BaseModel):
     beta: float
     mde_pct: float
     stratification: bool
+    strat_column: str | None
     cuped: bool
     n_buckets: int
     stat_test: str

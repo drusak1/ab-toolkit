@@ -17,6 +17,7 @@ export default function LaunchPage() {
     beta: 0.1,
     mde_pct: 1.0,
     stratification: false,
+    strat_column: "",
     cuped: false,
     n_buckets: 10,
     stat_test: "ttest" as (typeof TESTS)[number],
@@ -38,6 +39,11 @@ export default function LaunchPage() {
   const availableMetrics = useMemo(
     () => metrics.filter((m) => m.dataset_id === form.dataset_id),
     [metrics, form.dataset_id]
+  );
+
+  const dimCols = useMemo(
+    () => datasets.find((d) => d.id === form.dataset_id)?.schema_json.dim_cols ?? [],
+    [datasets, form.dataset_id]
   );
 
   const update = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
@@ -68,6 +74,7 @@ export default function LaunchPage() {
     try {
       const exp = await api.expCreate({
         ...form,
+        strat_column: form.stratification && form.strat_column ? form.strat_column : null,
         start_date: new Date(form.start_date).toISOString(),
         end_date: new Date(form.end_date).toISOString(),
       });
@@ -112,6 +119,14 @@ export default function LaunchPage() {
               <option value="false">off</option><option value="true">on</option>
             </select>
           </div>
+          {form.stratification && (
+            <div className="field"><label>Strat column</label>
+              <select value={form.strat_column} onChange={(e) => update("strat_column", e.target.value)}>
+                <option value="">—</option>
+                {dimCols.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
           <div className="field"><label>CUPED</label>
             <select value={String(form.cuped)} onChange={(e) => update("cuped", e.target.value === "true")}>
               <option value="false">off</option><option value="true">on</option>
